@@ -1,0 +1,18 @@
+services:
+  master:
+    build: .
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./:/mnt/locust
+    env_file:
+      - .env
+    command: -f /mnt/locust/locustfile.py --master -H $TARGET_API_SERVER
+
+  worker:
+    build: .
+    volumes:
+      - ./:/mnt/locust
+    env_file:
+      - .env
+    command: -f /mnt/locust/locustfile.py --worker --master-host master
