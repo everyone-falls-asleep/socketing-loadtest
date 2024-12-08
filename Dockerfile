@@ -1,2 +1,2 @@
 FROM locustio/locust
-RUN pip install python-socketio websocket-client
+RUN pip install pyjwt python-socketio websocket-client

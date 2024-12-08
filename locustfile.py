@@ -2,6 +2,7 @@ import time
 import requests
 from locust import HttpUser, User, SequentialTaskSet, task, between
 import socketio
+import jwt
 import random
 import os
 
@@ -18,7 +19,7 @@ EVENT_DATE_ID = os.getenv("EVENT_DATE_ID")
 
 
 class SocketIOUser(User):
-    wait_time = between(1, 5)
+    wait_time = between(1, 7)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -26,11 +27,17 @@ class SocketIOUser(User):
         self.areas = []
         self.seats = []
         self.selected_area_id = None
+        self.user_id = None
 
     def on_start(self):
         self.token = self.get_token()
         if not self.token:
             print("Failed to get token. Stopping user tasks.")
+            self.stop()
+            return
+        self.user_id = self.extract_sub_from_token()
+        if not self.user_id:
+            print("Failed to get user_id. Stopping user tasks.")
             self.stop()
             return
 
@@ -118,6 +125,31 @@ class SocketIOUser(User):
             print(f"Error during login: {e}")
         return None
 
+    def extract_sub_from_token(self):
+        """
+        JWT 토큰에서 sub 값을 추출합니다.
+
+        Args:
+            token (str): JWT 토큰 문자열.
+
+        Returns:
+            str: 토큰의 sub 값. 실패 시 None.
+        """
+        try:
+            # JWT 디코딩 (서명 검증 생략)
+            decoded_token = jwt.decode(
+                self.token, options={"verify_signature": False})
+            sub = decoded_token.get("sub")
+            if sub:
+                print(f"Extracted sub value: {sub}")
+                return sub
+            else:
+                print("sub value not found in token.")
+                return None
+        except Exception as e:
+            print(f"Error decoding token: {e}")
+            return None
+
     def connect_to_main_socket_server(self):
         self.sio = socketio.Client()
         self.seats = []
@@ -165,7 +197,7 @@ class SocketIOUser(User):
             })
 
             # 랜덤 시간 대기
-            disconnect_time = random.uniform(5, 15)
+            disconnect_time = random.uniform(10, 40)
             print(f"Disconnecting in {disconnect_time:.2f} seconds...")
             time.sleep(disconnect_time)
 
@@ -228,9 +260,24 @@ class SocketIOUser(User):
                     "areaId": self.selected_area_id
                 })
                 print(
-                    f"Seat {seat_id} in area {self.selected_area_id} "
-                    "selected successfully."
+                    f"Successfully sent a request to select seat {seat_id} "
+                    f"in area {self.selected_area_id}."
                 )
+                # 20% 확률로 실행되도록 설정
+                if random.random() < 0.2:
+                    time.sleep(0.5)
+                    self.sio.emit("reserveSeats", {
+                        "seatIds": [seat_id],
+                        "eventId": EVENT_ID,
+                        "eventDateId": EVENT_DATE_ID,
+                        "areaId": self.selected_area_id,
+                        "userId": self.user_id
+                    })
+                    print(
+                        f"Successfully sent a reservation request "
+                        f"for seat {seat_id} "
+                        f"in area {self.selected_area_id}."
+                    )
             except Exception as e:
                 print(f"Error during seat selection emit: {e}")
         else:
