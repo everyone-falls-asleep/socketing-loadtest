@@ -187,7 +187,8 @@ class SocketIOUser(User):
         @self.sio.on("orderMade")
         def on_order_made(data):
             # print(f"Seat selection update: {data}")
-            self.order_id = data.get("id")
+            reservation_data = data.get("data", {})
+            self.order_id = reservation_data.get("id")
             pass
 
         try:
@@ -282,7 +283,6 @@ class SocketIOUser(User):
                     })
                     time.sleep(0.5)
                     self.sio.emit("requestOrder", {
-                        "seatIds": [seat_id],
                         "eventId": EVENT_ID,
                         "eventDateId": EVENT_DATE_ID,
                         "areaId": self.selected_area_id,
