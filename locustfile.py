@@ -155,6 +155,7 @@ class SocketIOUser(User):
         self.seats = []
         self.areas = []
         self.selected_area_id = None
+        self.order_id = None
 
         @self.sio.event
         def connect():
@@ -181,6 +182,12 @@ class SocketIOUser(User):
         @self.sio.on("seatsSelected")
         def on_seat_selected(data):
             # print(f"Seat selection update: {data}")
+            pass
+
+        @self.sio.on("orderMade")
+        def on_order_made(data):
+            # print(f"Seat selection update: {data}")
+            self.order_id = data.get("id")
             pass
 
         try:
@@ -272,6 +279,16 @@ class SocketIOUser(User):
                         "eventDateId": EVENT_DATE_ID,
                         "areaId": self.selected_area_id,
                         "userId": self.user_id
+                    })
+                    time.sleep(0.5)
+                    self.sio.emit("requestOrder", {
+                        "seatIds": [seat_id],
+                        "eventId": EVENT_ID,
+                        "eventDateId": EVENT_DATE_ID,
+                        "areaId": self.selected_area_id,
+                        "userId": self.user_id,
+                        "orderId": self.order_id,
+                        "paymentMethod": "socket_pay"
                     })
                     print(
                         f"Successfully sent a reservation request "
