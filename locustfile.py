@@ -95,7 +95,7 @@ class SocketIOUser(User):
         """
         login_url = f"{TARGET_API_SERVER}/api/auth/login"
         login_payload = {
-            "email": "윤효전@jungle.com",
+            "email": "bot@jungle.com",
             "password": "123456"
         }
 
