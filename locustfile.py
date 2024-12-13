@@ -272,7 +272,7 @@ class SocketIOUser(User):
                     f"in area {self.selected_area_id}."
                 )
                 # 20% 확률로 실행되도록 설정
-                if random.random() < 0.2:
+                if random.random() < 0.5:
                     time.sleep(0.5)
                     self.sio.emit("reserveSeats", {
                         "seatIds": [seat_id],
